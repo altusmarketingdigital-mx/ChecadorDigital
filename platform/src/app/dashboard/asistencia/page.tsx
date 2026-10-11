@@ -55,8 +55,8 @@ export default function KioscoAsistenciaPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Kiosco de Asistencia Web</h1>
-        <p className="text-slate-500 text-sm mt-1">Registra tu jornada laboral con validación de hora en la nube y tolerancia de 10 min.</p>
+        <h1 className="text-3xl font-extrabold text-[#142238]">Kiosco de Asistencia ALTUS</h1>
+        <p className="text-slate-500 text-sm mt-1">Registra tu jornada laboral con validación horaria en la nube y tolerancia de 10 min.</p>
       </div>
 
       {mensaje && (
@@ -75,19 +75,19 @@ export default function KioscoAsistenciaPage() {
       )}
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col md:flex-row">
-        {/* Reloj */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-10 flex flex-col justify-center items-center md:w-2/5">
-          <Clock className="w-16 h-16 mb-4 text-blue-200" />
-          <div className="text-5xl font-black tracking-tight">{horaLocal || "00:00:00"}</div>
-          <div className="text-blue-100 mt-2 capitalize text-sm">{fechaLocal || "Sincronizando..."}</div>
+        {/* Reloj con el Azul Marino ALTUS #142238 */}
+        <div className="bg-[#142238] text-white p-10 flex flex-col justify-center items-center md:w-2/5 border-r border-white/10">
+          <Clock className="w-16 h-16 mb-4 text-[#D95A3F]" />
+          <div className="text-5xl font-black tracking-tight font-mono">{horaLocal || "00:00:00"}</div>
+          <div className="text-slate-300 mt-2 capitalize text-sm">{fechaLocal || "Sincronizando..."}</div>
           <div className="mt-8 px-4 py-2 bg-white/10 rounded-xl text-xs text-center border border-white/10">
-            Zona Horaria Oficial:<br/><strong className="font-mono text-sm">America/Mexico_City</strong>
+            Zona Horaria Oficial:<br/><strong className="font-mono text-sm text-[#D95A3F]">America/Mexico_City</strong>
           </div>
         </div>
 
         {/* Botonera Interactiva */}
         <div className="p-8 md:w-3/5 flex flex-col justify-center">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">Haz clic para checar:</h3>
+          <h3 className="text-base font-bold text-[#142238] mb-4">Selecciona tu evento:</h3>
           
           <div className="grid grid-cols-2 gap-4">
             <button 
@@ -113,24 +113,24 @@ export default function KioscoAsistenciaPage() {
             <button 
               onClick={() => registrarEvento("INICIO_PAUSA")}
               disabled={cargando}
-              className="flex flex-col items-center justify-center p-4 border border-slate-200 bg-white text-slate-700 rounded-xl hover:bg-slate-50 hover:border-amber-300 transition-all disabled:opacity-50 shadow-sm"
+              className="flex flex-col items-center justify-center p-4 border border-slate-200 bg-white text-slate-700 rounded-xl hover:bg-slate-50 hover:border-[#D95A3F] transition-all disabled:opacity-50 shadow-sm"
             >
-              <Coffee className="w-6 h-6 mb-1 text-amber-500" />
+              <Coffee className="w-6 h-6 mb-1 text-[#D95A3F]" />
               <span className="font-semibold text-sm">Inicio de Pausa</span>
             </button>
             
             <button 
               onClick={() => registrarEvento("FIN_PAUSA")}
               disabled={cargando}
-              className="flex flex-col items-center justify-center p-4 border border-slate-200 bg-white text-slate-700 rounded-xl hover:bg-slate-50 hover:border-blue-300 transition-all disabled:opacity-50 shadow-sm"
+              className="flex flex-col items-center justify-center p-4 border border-slate-200 bg-white text-slate-700 rounded-xl hover:bg-slate-50 hover:border-[#142238] transition-all disabled:opacity-50 shadow-sm"
             >
-              <LogIn className="w-6 h-6 mb-1 text-blue-500" />
+              <LogIn className="w-6 h-6 mb-1 text-[#142238]" />
               <span className="font-semibold text-sm">Fin de Pausa</span>
             </button>
           </div>
 
           <p className="mt-6 text-xs text-slate-400 text-center">
-            * Cada evento se almacena con la hora oficial del servidor en Supabase.
+            * Registros sincronizados en tiempo real con Supabase PostgreSQL.
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client"
 import { ReactNode } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { 
   Home, Users, Clock, Settings2, ShieldAlert, Cpu, 
@@ -34,16 +35,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   ]
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      {/* Sidebar Lateral */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col hidden md:flex shrink-0">
-        <div className="h-16 flex items-center px-6 border-b border-slate-100">
-          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Checador SaaS
-          </span>
+    <div className="flex h-screen bg-[#F8FAFC] font-sans">
+      {/* Sidebar Corporativo ALTUS (Azul Marino Profundo #142238) */}
+      <aside className="w-64 bg-[#142238] text-white border-r border-[#1e3252] flex flex-col hidden md:flex shrink-0 shadow-2xl">
+        
+        {/* Logo ALTUS */}
+        <div className="h-20 flex items-center px-6 border-b border-white/10 gap-3">
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-[#142238] border border-white/20">
+            <Image 
+              src="/logo-altus.jpg" 
+              alt="ALTUS Logo" 
+              width={40} 
+              height={40} 
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <div className="text-lg font-black tracking-wider text-white">ALTUS</div>
+            <div className="text-[10px] text-[#D95A3F] font-bold tracking-widest uppercase">Checador Digital</div>
+          </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        {/* Navegación con Acorde de Color Terracota / Coral #D95A3F */}
+        <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-1.5">
           {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -51,13 +65,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                   isActive
-                    ? "bg-blue-50 text-blue-700 shadow-sm shadow-blue-500/10 font-semibold"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-[#D95A3F] text-white shadow-lg shadow-[#D95A3F]/30 font-bold translate-x-1"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                <Icon className={`w-4 h-4 mr-3 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
+                <Icon className={`w-4 h-4 mr-3 ${isActive ? "text-white" : "text-slate-400"}`} />
                 <span>{item.name}</span>
               </Link>
             )
@@ -65,10 +79,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Cerrar Sesión */}
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-white/10 bg-[#0e192a]">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-2 text-sm font-medium text-rose-600 rounded-xl hover:bg-rose-50 transition-colors"
+            className="flex items-center w-full px-4 py-2.5 text-sm font-semibold text-rose-400 rounded-xl hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
           >
             <LogOut className="w-4 h-4 mr-3" />
             <span>Cerrar Sesión</span>
@@ -79,9 +93,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Cabecera Móvil */}
-        <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-200 md:hidden">
-          <span className="text-xl font-bold text-blue-600">Checador SaaS</span>
-          <button onClick={handleLogout} className="text-xs text-rose-600 font-semibold">Salir</button>
+        <header className="h-16 flex items-center justify-between px-6 bg-[#142238] text-white border-b border-white/10 md:hidden">
+          <div className="flex items-center gap-2">
+            <Image src="/logo-altus.jpg" alt="ALTUS" width={32} height={32} className="rounded-lg" />
+            <span className="font-bold tracking-wider">ALTUS Checador</span>
+          </div>
+          <button onClick={handleLogout} className="text-xs text-rose-400 font-bold">Salir</button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
