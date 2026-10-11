@@ -1,0 +1,25 @@
+# Node
+platform/node_modules/
+node_modules/
+
+# Next.js
+platform/.next/
+platform/out/
+.next/
+out/
+
+# Environment variables
+.env
+.env*.local
+platform/.env
+platform/.env*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db

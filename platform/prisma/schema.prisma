@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------
+// MODELOS DEL SISTEMA DE CONTROL DE ASISTENCIA
+// Aislamiento por Tenant (SaaS Multi-empresa)
+// -----------------------------------------
+
+model Tenant {
+  id                      String   @id @default(uuid()) @db.Uuid
+  razonSocial             String
+  rfc                     String   @unique
+  nombreComercial         String
+  zonaHorariaPorDefecto   String   @default("America/Mexico_City")
+  activo                  Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  sucursales              Sucursal[]
+  departamentos           Departamento[]
+  empleados               Empleado[]
+  dispositivos            Dispositivo[]
+  jornadasReglas          JornadaRegla[]
+  usuarios                Usuario[]
+  registrosAsistencia     RegistroAsistencia[]
+  incidencias             IncidenciaSolicitud[]
+  acuerdosLegales         AcuerdoLegal[]
+  auditoriaLogs           AuditoriaLog[]
+
+  @@map("tenants")
+}
+
+model Sucursal {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  nombre          String
+  domicilio       String
+  zonaHoraria     String   @default("America/Mexico_City")
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  departamentos   Departamento[]
+  empleados       Empleado[]
+  dispositivos    Dispositivo[]
+
+  @@map("sucursales")
+}
+
+model Departamento {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  sucursalId      String   @db.Uuid
+  nombre          String
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  sucursal        Sucursal @relation(fields: [sucursalId], references: [id])
+  empleados       Empleado[]
+
+  @@map("departamentos")
+}
+
+model Empleado {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  sucursalId      String   @db.Uuid
+  departamentoId  String   @db.Uuid
+  numeroEmpleado  String
+  nombreCompleto  String
+  puesto          String
+  fechaIngreso    DateTime @db.Date
+  jornadaId       String?  @db.Uuid
+  estado          String   @default("ACTIVO") // ACTIVO, BAJA, SUSPENDIDO
+
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  sucursal        Sucursal      @relation(fields: [sucursalId], references: [id])
+  departamento    Departamento  @relation(fields: [departamentoId], references: [id])
+  jornada         JornadaRegla? @relation(fields: [jornadaId], references: [id])
+  
+  usuario              Usuario?
+  registrosAsistencia  RegistroAsistencia[]
+  incidencias          IncidenciaSolicitud[]
+  acuerdosLegales      AcuerdoLegal[]
+
+  @@unique([tenantId, numeroEmpleado])
+  @@map("empleados")
+}
+
+model Usuario {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  empleadoId      String?  @unique @db.Uuid
+  email           String   @unique
+  passwordHash    String
+  rol             String   @default("TRABAJADOR") // SUPERADMIN, ADMIN, RRHH, SUPERVISOR, CONTADOR, TRABAJADOR
+  mfaHabilitado   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  empleado        Empleado? @relation(fields: [empleadoId], references: [id])
+  
+  auditoriaLogs   AuditoriaLog[]
+  incidenciasResueltas IncidenciaSolicitud[] @relation("ResueltoPor")
+
+  @@map("usuarios")
+}
+
+model Dispositivo {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  sucursalId      String   @db.Uuid
+  marca           String
+  modelo          String
+  numeroSerie     String
+  firmware        String?
+  estado          String   @default("OFFLINE") // ONLINE, OFFLINE
+  ultimaSincronizacion DateTime?
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  sucursal        Sucursal @relation(fields: [sucursalId], references: [id])
+  registros       RegistroAsistencia[]
+
+  @@map("dispositivos")
+}
+
+model JornadaRegla {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @db.Uuid
+  nombre                  String
+  tipo                    String   // DIURNA, NOCTURNA, MIXTA, ROTATIVA
+  configuracionHorarios   Json     // JSON estructurado con días y horas
+  toleranciaEntradaMinutos Int     @default(10)
+
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id])
+  empleados               Empleado[]
+
+  @@map("jornadas_reglas")
+}
+
+model RegistroAsistencia {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @db.Uuid
+  empleadoId              String   @db.Uuid
+  dispositivoId           String?  @db.Uuid // Nullable si es manual/web
+  tipoEvento              String   // ENTRADA, SALIDA, INICIO_PAUSA, FIN_PAUSA
+  fechaHoraEvento         DateTime
+  zonaHorariaEvento       String
+  fechaRecepcionServidor  DateTime @default(now())
+  metodoRegistro          String   // BIOMETRICO, WEB, APP, IMPORTACION
+  estadoValidacion        String   @default("VALIDO") // VALIDO, DUPLICADO, PENDIENTE, CORREGIDO
+  registroOriginalId      String?  @db.Uuid // Para correcciones inmutables
+
+  tenant                  Tenant               @relation(fields: [tenantId], references: [id])
+  empleado                Empleado             @relation(fields: [empleadoId], references: [id])
+  dispositivo             Dispositivo?         @relation(fields: [dispositivoId], references: [id])
+  
+  registroOriginal        RegistroAsistencia?  @relation("Correcciones", fields: [registroOriginalId], references: [id])
+  correcciones            RegistroAsistencia[] @relation("Correcciones")
+  
+  incidencias             IncidenciaSolicitud[]
+
+  @@map("registros_asistencia")
+}
+
+model IncidenciaSolicitud {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  empleadoId          String   @db.Uuid
+  registroId          String?  @db.Uuid
+  tipo                String   // FALTA_CHEQUEO, JUSTIFICACION, ERROR_DISPOSITIVO
+  estado              String   @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
+  resolucion          String?
+  resueltoPorId       String?  @db.Uuid
+  fechaSolicitud      DateTime @default(now())
+  fechaResolucion     DateTime?
+
+  tenant              Tenant              @relation(fields: [tenantId], references: [id])
+  empleado            Empleado            @relation(fields: [empleadoId], references: [id])
+  registroAsistencia  RegistroAsistencia? @relation(fields: [registroId], references: [id])
+  resueltoPor         Usuario?            @relation("ResueltoPor", fields: [resueltoPorId], references: [id])
+
+  @@map("incidencias_solicitudes")
+}
+
+model ConfiguracionNormativa {
+  id                  String   @id @default(uuid()) @db.Uuid
+  fuenteOficial       String   // DOF, LFT, STPS
+  versionNorma        String
+  fechaEntradaVigor   DateTime @db.Date
+  reglasAplicables    Json
+  estado              String   @default("BORRADOR") // BORRADOR, ACTIVA, OBSOLETA
+
+  @@map("configuracion_normativa")
+}
+
+model AcuerdoLegal {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  empleadoId          String   @db.Uuid
+  versionDocumento    String
+  fechaAceptacion     DateTime @default(now())
+  metodoAceptacion    String   // FIRMA_DIGITAL, CHECKBOX, HUELLA
+  evidenciaHash       String
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+  empleado            Empleado @relation(fields: [empleadoId], references: [id])
+
+  @@map("acuerdos_legales")
+}
+
+model AuditoriaLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  usuarioId           String?  @db.Uuid
+  accion              String
+  tablaAfectada       String
+  registroAfectadoId  String
+  valoresAnteriores   Json?
+  valoresNuevos       Json?
+  fechaHora           DateTime @default(now())
+  direccionIp         String?
+  firmaIntegridad     String?
+
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+  usuario             Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@map("auditoria_logs")
+}
