@@ -1,7 +1,6 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { Fingerprint, ScanFace, Lock, Mail, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -26,14 +25,13 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (data.success) {
-        router.push("/dashboard")
-        router.refresh()
+        window.location.href = "/dashboard"
       } else {
         setError(data.error || "Credenciales inválidas")
         setCargando(false)
       }
     } catch {
-      router.push("/dashboard")
+      window.location.href = "/dashboard"
     }
   }
 
@@ -41,7 +39,7 @@ export default function LoginPage() {
     setCargando(true)
     setTimeout(() => {
       handleLogin()
-    }, 800)
+    }, 600)
   }
 
   return (
@@ -53,16 +51,13 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-white/10 relative z-10">
         
-        {/* Cabecera con Logotipo ALTUS */}
+        {/* Cabecera con Logotipo ALTUS Nativo */}
         <div className="text-center mb-8">
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-xl border-2 border-[#142238] bg-[#142238] p-1 flex items-center justify-center">
-            <Image 
+            <img 
               src="/logo-altus.jpg" 
               alt="ALTUS Logo" 
-              width={76} 
-              height={76} 
-              className="object-contain"
-              priority
+              className="w-full h-full object-contain"
             />
           </div>
           <h1 className="text-3xl font-black tracking-wider text-[#142238]">ALTUS</h1>
@@ -118,7 +113,6 @@ export default function LoginPage() {
             <a href="#" className="font-semibold text-[#D95A3F] hover:underline">¿Olvidaste tu contraseña?</a>
           </div>
 
-          {/* Botón Principal ALTUS Terracota #D95A3F */}
           <button 
             type="submit" 
             disabled={cargando}

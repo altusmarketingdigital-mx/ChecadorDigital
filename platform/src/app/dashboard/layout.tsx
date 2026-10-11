@@ -1,8 +1,7 @@
 "use client"
 import { ReactNode } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { 
   Home, Users, Clock, Settings2, ShieldAlert, Cpu, 
   FileSpreadsheet, Scale, FileCheck, LogOut 
@@ -10,16 +9,15 @@ import {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" })
-      router.push("/login")
-      router.refresh()
-    } catch {
-      router.push("/login")
-    }
+  // Cerrar sesión instantáneo (0 milisegundos de espera)
+  const handleLogout = () => {
+    // 1. Borrar cookie de inmediato en el navegador
+    document.cookie = "app_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+    // 2. Avisar a la API en segundo plano sin bloquear
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {})
+    // 3. Redirección instantánea de hardware
+    window.location.href = "/login"
   }
 
   const menuItems = [
@@ -36,27 +34,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans">
-      {/* Sidebar Corporativo ALTUS (Azul Marino Profundo #142238) */}
+      {/* Sidebar Corporativo ALTUS */}
       <aside className="w-64 bg-[#142238] text-white border-r border-[#1e3252] flex flex-col hidden md:flex shrink-0 shadow-2xl">
         
-        {/* Logo ALTUS */}
+        {/* Cabecera con Logotipo ALTUS directo */}
         <div className="h-20 flex items-center px-6 border-b border-white/10 gap-3">
-          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-[#142238] border border-white/20">
-            <Image 
+          <div className="w-11 h-11 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-[#142238] border border-white/20 shrink-0">
+            {/* img estándar para renderizado nativo instantáneo garantizado */}
+            <img 
               src="/logo-altus.jpg" 
               alt="ALTUS Logo" 
-              width={40} 
-              height={40} 
-              className="object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
           <div>
-            <div className="text-lg font-black tracking-wider text-white">ALTUS</div>
-            <div className="text-[10px] text-[#D95A3F] font-bold tracking-widest uppercase">Checador Digital</div>
+            <div className="text-xl font-black tracking-wider text-white leading-none">ALTUS</div>
+            <div className="text-[10px] text-[#D95A3F] font-bold tracking-widest uppercase mt-1">Checador Digital</div>
           </div>
         </div>
 
-        {/* Navegación con Acorde de Color Terracota / Coral #D95A3F */}
+        {/* Navegación */}
         <nav className="flex-1 overflow-y-auto py-5 px-3 space-y-1.5">
           {menuItems.map((item) => {
             const Icon = item.icon
@@ -78,7 +75,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        {/* Cerrar Sesión */}
+        {/* Cerrar Sesión Instantáneo */}
         <div className="p-4 border-t border-white/10 bg-[#0e192a]">
           <button
             onClick={handleLogout}
@@ -95,7 +92,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Cabecera Móvil */}
         <header className="h-16 flex items-center justify-between px-6 bg-[#142238] text-white border-b border-white/10 md:hidden">
           <div className="flex items-center gap-2">
-            <Image src="/logo-altus.jpg" alt="ALTUS" width={32} height={32} className="rounded-lg" />
+            <img src="/logo-altus.jpg" alt="ALTUS" className="w-8 h-8 rounded-lg object-contain" />
             <span className="font-bold tracking-wider">ALTUS Checador</span>
           </div>
           <button onClick={handleLogout} className="text-xs text-rose-400 font-bold">Salir</button>
