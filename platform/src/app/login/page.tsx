@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Fingerprint, ScanFace, Lock, Mail, Loader2 } from "lucide-react"
+import { AltusLogo } from "@/components/AltusLogo"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -51,14 +52,10 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 border border-white/10 relative z-10">
         
-        {/* Cabecera con Logotipo ALTUS Nativo */}
+        {/* Cabecera con Logotipo ALTUS 100% Infalible (Incrustado Base64) */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-xl border-2 border-[#142238] bg-[#142238] p-1 flex items-center justify-center">
-            <img 
-              src="/logo-altus.jpg" 
-              alt="ALTUS Logo" 
-              className="w-full h-full object-contain"
-            />
+          <div className="w-24 h-24 mx-auto mb-4 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 bg-[#142238] p-2 flex items-center justify-center">
+            <AltusLogo className="w-full h-full" />
           </div>
           <h1 className="text-3xl font-black tracking-wider text-[#142238]">ALTUS</h1>
           <p className="text-[#D95A3F] font-bold text-xs uppercase tracking-widest mt-0.5">Control de Asistencia Laboral SaaS</p>

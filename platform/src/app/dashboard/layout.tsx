@@ -6,17 +6,15 @@ import {
   Home, Users, Clock, Settings2, ShieldAlert, Cpu, 
   FileSpreadsheet, Scale, FileCheck, LogOut 
 } from "lucide-react"
+import { AltusLogo } from "@/components/AltusLogo"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   // Cerrar sesión instantáneo (0 milisegundos de espera)
   const handleLogout = () => {
-    // 1. Borrar cookie de inmediato en el navegador
     document.cookie = "app_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;"
-    // 2. Avisar a la API en segundo plano sin bloquear
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {})
-    // 3. Redirección instantánea de hardware
     window.location.href = "/login"
   }
 
@@ -37,15 +35,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* Sidebar Corporativo ALTUS */}
       <aside className="w-64 bg-[#142238] text-white border-r border-[#1e3252] flex flex-col hidden md:flex shrink-0 shadow-2xl">
         
-        {/* Cabecera con Logotipo ALTUS directo */}
+        {/* Cabecera con Logotipo ALTUS Base64 100% visible */}
         <div className="h-20 flex items-center px-6 border-b border-white/10 gap-3">
-          <div className="w-11 h-11 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-[#142238] border border-white/20 shrink-0">
-            {/* img estándar para renderizado nativo instantáneo garantizado */}
-            <img 
-              src="/logo-altus.jpg" 
-              alt="ALTUS Logo" 
-              className="w-full h-full object-contain"
-            />
+          <div className="w-12 h-12 rounded-xl overflow-hidden shadow-md flex items-center justify-center bg-[#142238] border border-white/20 shrink-0 p-1">
+            <AltusLogo className="w-full h-full" />
           </div>
           <div>
             <div className="text-xl font-black tracking-wider text-white leading-none">ALTUS</div>
@@ -92,7 +85,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Cabecera Móvil */}
         <header className="h-16 flex items-center justify-between px-6 bg-[#142238] text-white border-b border-white/10 md:hidden">
           <div className="flex items-center gap-2">
-            <img src="/logo-altus.jpg" alt="ALTUS" className="w-8 h-8 rounded-lg object-contain" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#142238] border border-white/20 p-0.5">
+              <AltusLogo className="w-full h-full" />
+            </div>
             <span className="font-bold tracking-wider">ALTUS Checador</span>
           </div>
           <button onClick={handleLogout} className="text-xs text-rose-400 font-bold">Salir</button>
