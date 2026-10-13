@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { 
   Users, UserCheck, Clock, AlertTriangle, ArrowUpRight, 
@@ -9,6 +9,11 @@ import {
 export default function DashboardPage() {
   const [sucursal, setSucursal] = useState("Todas")
   const [departamento, setDepartamento] = useState("Todos")
+  const [fechaHoy, setFechaHoy] = useState<string>("")
+
+  useEffect(() => {
+    setFechaHoy(new Date().toLocaleDateString('es-MX'))
+  }, [])
 
   const ultimosRegistros = [
     { id: 1, emp: "Carlos Mendoza", num: "EMP-001", depto: "Tecnología", evento: "ENTRADA", hora: "08:52 hrs", metodo: "Huella Digital", estado: "A Tiempo" },
@@ -58,7 +63,7 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
             <Calendar className="w-3.5 h-3.5 text-[#D95A3F]" />
-            <span>Hoy: {new Date().toLocaleDateString('es-MX')}</span>
+            <span>Hoy: {fechaHoy || "Cargando..."}</span>
           </div>
         </div>
       </div>
