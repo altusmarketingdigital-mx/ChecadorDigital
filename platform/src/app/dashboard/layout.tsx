@@ -7,6 +7,7 @@ import {
   FileSpreadsheet, Scale, FileCheck, LogOut, Menu, X, FileUp 
 } from "lucide-react"
 import { AltusLogo } from "@/components/AltusLogo"
+import { NotificationCenter } from "@/components/NotificationCenter"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
@@ -155,7 +156,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* 3. CONTENIDO PRINCIPAL */}
       <main className="flex-1 flex flex-col overflow-hidden">
         
-        {/* Cabecera Móvil y Tablet (con Botón de Menú Hamburguesa y soporte de Notch / Dynamic Island) */}
+        {/* Cabecera Superior de Escritorio (md y superior) */}
+        <header className="hidden md:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-8 shrink-0 shadow-sm z-10">
+          <div className="flex items-center gap-3">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-slate-600">
+              Servidor Activo • Registro Central de Asistencia STPS en Tiempo Real
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Campana de Notificaciones en Tiempo Real */}
+            <div className="bg-[#142238] rounded-xl p-0.5 shadow-sm">
+              <NotificationCenter />
+            </div>
+
+            <div className="h-6 w-px bg-slate-200" />
+
+            {/* Perfil del Administrador */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-[#142238] text-white flex items-center justify-center font-bold text-xs border border-white/20">
+                AD
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-800 leading-tight">Administrador</div>
+                <div className="text-[10px] text-[#D95A3F] font-bold">ALTUS SuperAdmin</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Cabecera Móvil y Tablet (con Botón de Menú Hamburguesa, Campana y soporte de Notch / Dynamic Island) */}
         <header 
           className="flex items-center justify-between px-4 sm:px-6 bg-[#142238] text-white border-b border-white/10 md:hidden shrink-0 shadow-md transition-all"
           style={{
@@ -182,12 +213,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <button 
-            onClick={handleLogout} 
-            className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs transition-colors"
-          >
-            Salir
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Notificaciones en Móvil / iPhone / iPad */}
+            <NotificationCenter />
+
+            <button 
+              onClick={handleLogout} 
+              className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs transition-colors"
+            >
+              Salir
+            </button>
+          </div>
         </header>
 
         {/* Área scrolleable de las vistas */}

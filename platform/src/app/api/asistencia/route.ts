@@ -1,57 +1,63 @@
 import { NextResponse } from 'next/server'
-// import { PrismaClient } from '@prisma/client'
-// const prisma = new PrismaClient()
+import { agregarNotificacion } from '@/lib/notifications'
+
+const catalogoNombres: Record<string, string> = {
+  "EMP-001": "Carlos Mendoza",
+  "EMP-002": "Lucía García",
+  "EMP-003": "Alberto Rivas",
+  "EMP-004": "Mariana Solís",
+  "EMP-005": "Fernando Torres",
+  "1": "Carlos Mendoza",
+  "2": "Lucía García",
+  "3": "Alberto Rivas",
+  "4": "Mariana Solís",
+}
 
 export async function POST(request: Request) {
   try {
     const data = await request.json()
-    const { empleadoId, tipoEvento, tenantId } = data
+    const { empleadoId, tipoEvento, tenantId, nombre } = data
     
     // 1. Obtener la hora oficial del servidor (Seguridad: No confiar en la hora del navegador)
     const fechaHoraEvento = new Date()
-    const zonaHorariaEvento = "America/Mexico_City" // Podría venir de la sucursal del empleado
+    const zonaHorariaEvento = "America/Mexico_City"
 
-    // 2. Aquí buscaríamos la regla de jornada del empleado en la Base de Datos
-    // const empleado = await prisma.empleado.findUnique({
-    //   where: { id: empleadoId },
-    //   include: { jornada: true }
-    // })
+    // Tolerancia global de 10 minutos
+    const toleranciaMinutos = 10
+    let estadoValidacion = "VALIDO"
 
-    // SIMULACIÓN: Tolerancia global configurada por el usuario
-    const toleranciaMinutos = 10; 
-    let estadoValidacion = "VALIDO";
+    // Resolver nombre del empleado si no viene explícito
+    const nominaNormalizada = (empleadoId || "EMP-001").trim()
+    const nombreFinal = nombre || catalogoNombres[nominaNormalizada] || catalogoNombres[nominaNormalizada.replace(/^EMP-0*/, '')] || `Empleado ${nominaNormalizada}`
 
-    // Lógica para detectar retardo si el evento es "ENTRADA"
-    if (tipoEvento === "ENTRADA") {
-      // (Pseudocódigo)
-      // const horaEntradaOficial = empleado.jornada.horaEntrada; 
-      // const diferenciaMinutos = calcularDiferencia(fechaHoraEvento, horaEntradaOficial);
-      // if (diferenciaMinutos > toleranciaMinutos) {
-      //   Registrar como retardo en otra tabla o marcar el estado
-      // }
-    }
+    // 2. Notificación en tiempo real para el Administrador del Sistema
+    // Indica nómina, nombre, tipo de registro y hora
+    const horaFormateada = fechaHoraEvento.toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    })
+    const fechaFormateada = fechaHoraEvento.toLocaleDateString('es-MX')
 
-    // 3. Guardar el registro inmutable en la base de datos
-    // const nuevoRegistro = await prisma.registroAsistencia.create({
-    //   data: {
-    //     tenantId,
-    //     empleadoId,
-    //     tipoEvento, // ENTRADA, SALIDA, INICIO_PAUSA, FIN_PAUSA
-    //     fechaHoraEvento,
-    //     zonaHorariaEvento,
-    //     metodoRegistro: "WEB",
-    //     estadoValidacion,
-    //   }
-    // })
+    const notificacionCreada = agregarNotificacion({
+      nomina: nominaNormalizada,
+      nombre: nombreFinal,
+      tipoRegistro: tipoEvento,
+      hora: horaFormateada,
+      fecha: fechaFormateada
+    })
 
     return NextResponse.json({ 
       success: true, 
       mensaje: `Registro de ${tipoEvento} guardado exitosamente.`,
       horaOficial: fechaHoraEvento,
-      toleranciaAplicada: toleranciaMinutos
+      toleranciaAplicada: toleranciaMinutos,
+      notificacion: notificacionCreada
     })
 
   } catch (error) {
+    console.error("Error al registrar asistencia:", error)
     return NextResponse.json({ success: false, error: "Error procesando el registro" }, { status: 500 })
   }
 }

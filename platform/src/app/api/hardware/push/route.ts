@@ -1,4 +1,13 @@
 import { NextResponse } from 'next/server'
+import { agregarNotificacion } from '@/lib/notifications'
+
+const nombresHardware: Record<string, string> = {
+  "1": "Carlos Mendoza",
+  "2": "Lucía García",
+  "3": "Alberto Rivas",
+  "4": "Mariana Solís",
+  "105": "Fernando Torres"
+}
 
 // Simulación de nuestro adaptador para checadores de huella (Ej. Protocolo Push / ADMS)
 export async function POST(request: Request) {
@@ -24,21 +33,33 @@ export async function POST(request: Request) {
     // 3. Procesar cada huella capturada por el lector
     for (const linea of lineas) {
       const [empleadoId, fechaHoraDispositivo, tipoEventoFisico] = linea.split('\t')
+      const empIdTrim = (empleadoId || "").trim()
 
       // Identificar si es sincronización retrasada (el dispositivo perdió internet)
-      const fechaLector = new Date(fechaHoraDispositivo)
+      const fechaLector = new Date(fechaHoraDispositivo || new Date())
       const fechaServidor = new Date()
       
       const diferenciaHoras = Math.abs(fechaServidor.getTime() - fechaLector.getTime()) / 36e5
       const esOffline = diferenciaHoras > 1 // Si tiene más de 1 hora de diferencia, estaba offline
+      const tipoEvento = tipoEventoFisico === '1' ? 'ENTRADA' : 'SALIDA'
+
+      // Generar notificación para el administrador
+      const nombreEmp = nombresHardware[empIdTrim] || `Colaborador #${empIdTrim}`
+      agregarNotificacion({
+        nomina: `EMP-${empIdTrim.padStart(3, '0')}`,
+        nombre: nombreEmp,
+        tipoRegistro: tipoEvento,
+        hora: fechaLector.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+        fecha: fechaLector.toLocaleDateString('es-MX')
+      })
 
       // Armar el evento estandarizado para nuestra Base de Datos
       eventosPendientes.push({
         numeroSerieDispositivo: numeroSerie,
-        empleadoId: empleadoId.trim(),
+        empleadoId: empIdTrim,
         fechaHoraEvento: fechaLector, // Respetamos la hora en la que puso la huella
         fechaRecepcionServidor: fechaServidor, // Registramos la hora real en que llegó a la nube
-        tipoEvento: tipoEventoFisico === '1' ? 'ENTRADA' : 'SALIDA',
+        tipoEvento,
         metodoRegistro: 'BIOMETRICO',
         // Si estaba offline, generamos una alerta de validación para RH
         estadoValidacion: esOffline ? 'PENDIENTE_REVISION' : 'VALIDO' 

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { agregarNotificacion } from '@/lib/notifications'
 
 interface EventoChecadorInput {
   numeroEmpleado: string
@@ -148,6 +149,18 @@ export async function POST(request: Request) {
               estadoTolerancia = "DENTRO_DE_TOLERANCIA_10M"
             }
           }
+        }
+
+        // Generar notificación para el administrador si es entrada o salida
+        if (ev.tipoEvento === "ENTRADA" || ev.tipoEvento === "SALIDA") {
+          const partesFH = ev.fechaHora.split(' ')
+          agregarNotificacion({
+            nomina: `EMP-${numNormalizado}`,
+            nombre: nombreAsignado,
+            tipoRegistro: ev.tipoEvento,
+            hora: partesFH[1] || ev.fechaHora,
+            fecha: partesFH[0] || fechaRecepcion.toLocaleDateString('es-MX')
+          })
         }
 
         procesados.push({
