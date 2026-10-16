@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
   Home, Users, Clock, Settings2, ShieldAlert, Cpu, 
-  FileSpreadsheet, Scale, FileCheck, LogOut, Menu, X 
+  FileSpreadsheet, Scale, FileCheck, LogOut, Menu, X, FileUp 
 } from "lucide-react"
 import { AltusLogo } from "@/components/AltusLogo"
 
@@ -25,6 +25,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { name: "Kiosco Asistencia", href: "/dashboard/asistencia", icon: Clock },
     { name: "Jornadas y Horarios", href: "/dashboard/jornadas", icon: Settings2 },
     { name: "Lectores de Huella", href: "/dashboard/dispositivos", icon: Cpu },
+    { name: "Carga de Checador", href: "/dashboard/importar-checador", icon: FileUp },
     { name: "Incidencias LFT", href: "/dashboard/incidencias", icon: ShieldAlert },
     { name: "Centro de Reportes", href: "/dashboard/reportes", icon: FileSpreadsheet },
     { name: "Marco Normativo", href: "/dashboard/normativa", icon: Scale },

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useRef } from "react"
-import { Cpu, Plus, Wifi, WifiOff, Upload, CheckCircle2, AlertTriangle, X, RefreshCw } from "lucide-react"
+import Link from "next/link"
+import { Cpu, Plus, Wifi, WifiOff, Upload, CheckCircle2, AlertTriangle, X, RefreshCw, ArrowRight } from "lucide-react"
 
 export default function DispositivosPage() {
   const [dispositivos, setDispositivos] = useState([
@@ -89,13 +90,13 @@ export default function DispositivosPage() {
           <p className="text-slate-500 text-sm mt-1">Supervisa terminales de huella dactilar, estado de sincronización e importaciones USB.</p>
         </div>
         <div className="flex gap-2.5">
-          <button 
-            onClick={() => fileInputRef.current?.click()}
+          <Link 
+            href="/dashboard/importar-checador"
             className="flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 text-sm font-semibold shadow-sm transition-all"
           >
             <Upload className="w-4 h-4 mr-2 text-slate-500" />
-            Importar USB
-          </button>
+            Cargar Archivo de Checador (USB)
+          </Link>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -178,21 +179,32 @@ export default function DispositivosPage() {
         ))}
       </div>
 
-      {/* Zona de Importación USB */}
+      {/* Zona de Importación USB con enlace al Módulo de Carga */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
-        <h3 className="text-base font-bold text-slate-900 mb-1">Importación de Respaldo por Memoria USB</h3>
-        <p className="text-sm text-slate-500 mb-5">
-          Si una sucursal pierde conectividad a internet, descarga los registros con una memoria USB en formato ZKTeco (<code>.dat</code>, <code>.txt</code> o <code>.csv</code>) y cárgalos aquí. El sistema validará la firma de tiempo y descartará eventos duplicados.
-        </p>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Importación de Respaldo por Memoria USB</h3>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Si tu sucursal no tiene internet, descarga el archivo <code>.dat</code> o <code>.csv</code> del checador y cárgalo con previsualización inteligente.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/importar-checador"
+            className="flex items-center px-4 py-2 bg-[#D95A3F] text-white rounded-xl hover:bg-[#C24C33] text-xs font-bold transition-all shrink-0 shadow-md shadow-[#D95A3F]/20"
+          >
+            Abrir Módulo de Carga
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+          </Link>
+        </div>
 
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-300 hover:border-[#D95A3F] rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-orange-50/20 transition-all cursor-pointer group"
+        <Link 
+          href="/dashboard/importar-checador"
+          className="block border-2 border-dashed border-slate-300 hover:border-[#D95A3F] rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-orange-50/20 transition-all cursor-pointer group"
         >
           <Upload className="w-10 h-10 text-slate-400 group-hover:text-[#D95A3F] mx-auto mb-3 transition-colors" />
-          <p className="text-sm font-bold text-slate-800">Haz clic para seleccionar el archivo exportado de tu terminal</p>
-          <p className="text-xs text-slate-400 mt-1">Archivos soportados: .dat, .txt, .csv (Descargas directas de terminales ZKTeco y compatibles)</p>
-        </div>
+          <p className="text-sm font-bold text-slate-800">Haz clic aquí para ingresar al módulo de análisis y carga de archivos</p>
+          <p className="text-xs text-slate-400 mt-1">Soporta descargas automáticas de terminales ZKTeco (.dat, .txt, .csv) con filtrado anti-duplicados</p>
+        </Link>
       </div>
 
       {/* Modal Vincular Dispositivo */}
