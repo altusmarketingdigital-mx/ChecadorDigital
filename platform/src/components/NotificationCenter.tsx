@@ -66,32 +66,42 @@ export function NotificationCenter() {
 
   // 1. Consultar estado del permiso de notificaciones del dispositivo
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPermisoPush(Notification.permission)
+    try {
+      if (typeof window !== "undefined" && "Notification" in window && window.Notification) {
+        setPermisoPush(window.Notification.permission || "default")
+      }
+    } catch {
+      // Ignorar restricciones en WebKit
     }
   }, [])
 
   // 2. Función para disparar notificación a nivel Sistema Operativo (Web Push / iOS PWA)
   const dispararNotificacionSistema = useCallback((notif: NotificacionAsistencia) => {
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-      const titulo = `🔔 Checada: ${notif.tipoRegistro} (${notif.nomina})`
-      const opciones: NotificationOptions = {
-        body: `${notif.nombre} | Nómina: ${notif.nomina}\n${notif.tipoRegistro} a las ${notif.hora}`,
-        icon: "/logo-altus.jpg",
-        badge: "/logo-altus.jpg",
-        tag: notif.id,
-      }
+    try {
+      if (typeof window !== "undefined" && "Notification" in window && window.Notification && window.Notification.permission === "granted") {
+        const titulo = `🔔 Checada: ${notif.tipoRegistro} (${notif.nomina})`
+        const opciones: NotificationOptions = {
+          body: `${notif.nombre} | Nómina: ${notif.nomina}\n${notif.tipoRegistro} a las ${notif.hora}`,
+          icon: "/logo-altus.jpg",
+          badge: "/logo-altus.jpg",
+          tag: notif.id,
+        }
 
-      // Si hay service worker activo (iPhone PWA / Android)
-      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(titulo, opciones)
-        }).catch(() => {
-          new Notification(titulo, opciones)
-        })
-      } else {
-        new Notification(titulo, opciones)
+        // En iOS Safari PWA, las notificaciones deben enviarse vía Service Worker showNotification
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification(titulo, opciones)
+          }).catch(() => {})
+        } else {
+          try {
+            new Notification(titulo, opciones)
+          } catch {
+            // iOS standalone no permite constructor new Notification directo
+          }
+        }
       }
+    } catch {
+      // Ignorar fallo de notificación del SO
     }
   }, [])
 
@@ -138,16 +148,29 @@ export function NotificationCenter() {
 
   // Solicitar permiso de notificaciones para iPhone / iPad / PC
   const solicitarPermisoPush = async () => {
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (typeof window !== "undefined" && "Notification" in window && window.Notification) {
       try {
-        const permiso = await Notification.requestPermission()
+        const permiso = await window.Notification.requestPermission()
         setPermisoPush(permiso)
         if (permiso === "granted") {
           reproducirChimeNotificacion()
-          new Notification("🔔 Notificaciones ALTUS Activadas", {
-            body: "Recibirás alertas en tiempo real de cada entrada y salida de empleados.",
-            icon: "/logo-altus.jpg",
-          })
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.showNotification("🔔 Notificaciones ALTUS Activadas", {
+                body: "Recibirás alertas en tiempo real de cada entrada y salida de empleados.",
+                icon: "/logo-altus.jpg",
+              })
+            }).catch(() => {})
+          } else {
+            try {
+              new Notification("🔔 Notificaciones ALTUS Activadas", {
+                body: "Recibirás alertas en tiempo real de cada entrada y salida de empleados.",
+                icon: "/logo-altus.jpg",
+              })
+            } catch {
+              // iOS constructor fallback
+            }
+          }
         }
       } catch (err) {
         console.error("Error al solicitar permiso de notificación:", err)

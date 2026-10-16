@@ -8,11 +8,14 @@ export function InstallPromptIOS() {
   const [isIOSDevice, setIsIOSDevice] = useState(false)
 
   useEffect(() => {
-    // 1. Registrar Service Worker para PWA
+    // 1. Registrar y actualizar Service Worker para PWA
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register("/sw.js")
-        .then(() => console.log("ALTUS SW registrado con éxito."))
+        .register("/sw.js", { scope: "/" })
+        .then((reg) => {
+          reg.update()
+          console.log("ALTUS SW registrado y actualizado con éxito.")
+        })
         .catch((err) => console.log("SW Registro error:", err))
     }
 
@@ -28,7 +31,12 @@ export function InstallPromptIOS() {
       ("standalone" in window.navigator && (window.navigator as unknown as { standalone: boolean }).standalone === true)
 
     // 4. Verificar si el usuario ya descartó el aviso en esta sesión
-    const isDismissed = sessionStorage.getItem("altus_ios_prompt_dismissed")
+    let isDismissed = false
+    try {
+      isDismissed = sessionStorage.getItem("altus_ios_prompt_dismissed") === "true"
+    } catch {
+      // Ignorar bloqueos de almacenamiento en Safari
+    }
 
     if (isIOS) {
       setIsIOSDevice(true)
@@ -41,7 +49,11 @@ export function InstallPromptIOS() {
   }, [])
 
   const handleDismiss = () => {
-    sessionStorage.setItem("altus_ios_prompt_dismissed", "true")
+    try {
+      sessionStorage.setItem("altus_ios_prompt_dismissed", "true")
+    } catch {
+      // Ignorar bloqueos de almacenamiento en Safari
+    }
     setShowPrompt(false)
   }
 

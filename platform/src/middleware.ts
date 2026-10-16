@@ -4,13 +4,18 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // 1. Rutas públicas que no requieren autenticación
+  // 1. Rutas públicas y recursos estáticos que NUNCA deben redirigirse
   if (
     pathname.startsWith('/login') || 
     pathname.startsWith('/api/auth') || 
     pathname.startsWith('/setup-admin') ||
     pathname === '/logo-altus.jpg' ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    pathname === '/sw.js' ||
+    pathname === '/manifest.json' ||
+    pathname === '/manifest.webmanifest' ||
+    pathname === '/robots.txt' ||
+    pathname.startsWith('/icons')
   ) {
     return NextResponse.next()
   }
@@ -29,6 +34,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/hardware|_next/static|_next/image|favicon.ico|logo-altus.jpg).*)',
+    '/((?!api/hardware|_next/static|_next/image|favicon.ico|logo-altus.jpg|sw.js|manifest.json|manifest.webmanifest|robots.txt).*)',
   ],
 }
