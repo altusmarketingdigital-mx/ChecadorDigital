@@ -93,7 +93,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           />
           
           {/* Panel Lateral Móvil */}
-          <div className="relative w-4/5 max-w-xs bg-[#142238] text-white h-full flex flex-col shadow-2xl z-10">
+          <div 
+            className="relative w-4/5 max-w-xs bg-[#142238] text-white h-full flex flex-col shadow-2xl z-10"
+            style={{ 
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)"
+            }}
+          >
             <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#142238] border border-white/20 p-0.5">
@@ -149,8 +155,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       {/* 3. CONTENIDO PRINCIPAL */}
       <main className="flex-1 flex flex-col overflow-hidden">
         
-        {/* Cabecera Móvil y Tablet (con Botón de Menú Hamburguesa) */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-[#142238] text-white border-b border-white/10 md:hidden shrink-0 shadow-md">
+        {/* Cabecera Móvil y Tablet (con Botón de Menú Hamburguesa y soporte de Notch / Dynamic Island) */}
+        <header 
+          className="flex items-center justify-between px-4 sm:px-6 bg-[#142238] text-white border-b border-white/10 md:hidden shrink-0 shadow-md transition-all"
+          style={{
+            paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))",
+            paddingBottom: "0.5rem",
+            minHeight: "calc(4rem + env(safe-area-inset-top, 0px))"
+          }}
+        >
           <div className="flex items-center gap-3">
             {/* BOTÓN HAMBURGUESA PARA ABRIR MENÚ */}
             <button 
@@ -178,7 +191,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Área scrolleable de las vistas */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+        <div 
+          className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8"
+          style={{
+            paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))"
+          }}
+        >
           {children}
         </div>
       </main>
