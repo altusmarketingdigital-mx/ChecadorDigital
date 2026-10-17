@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { 
   Bell, BellRing, LogIn, LogOut, Check, Trash2, X, 
-  Smartphone, Volume2, Sparkles, Clock, User 
+  Smartphone, Volume2, Sparkles, Clock, User, ShieldCheck 
 } from "lucide-react"
 
 export interface NotificacionAsistencia {
@@ -16,10 +16,28 @@ export interface NotificacionAsistencia {
   leido: boolean
 }
 
+const VAPID_PUBLIC_KEY =
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+  "BE25dPXFzn5rbcCwKf-x3rbGj7IybFTD6OSM-X2br-58XRP5qPSSLBPNkqfOFT7YRNhsbQbtt55T8nDlpM0o3dM"
+
+// Función para convertir VAPID public key base64 a Uint8Array requerido por PushManager
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/")
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
 // Reproductor de sonido nativo mediante Web Audio API (Chime estilo iOS)
 function reproducirChimeNotificacion() {
   try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     if (!AudioContextClass) return
     const ctx = new AudioContextClass()
 
@@ -27,7 +45,7 @@ function reproducirChimeNotificacion() {
     const osc1 = ctx.createOscillator()
     const gain1 = ctx.createGain()
 
-    // Nota 1 (tono agudo suave)
+    // Nota 1
     osc1.type = "sine"
     osc1.frequency.setValueAtTime(587.33, now) // D5
     gain1.gain.setValueAtTime(0.12, now)
@@ -38,7 +56,7 @@ function reproducirChimeNotificacion() {
     osc1.start(now)
     osc1.stop(now + 0.3)
 
-    // Nota 2 (tono confirmación agradable)
+    // Nota 2
     const osc2 = ctx.createOscillator()
     const gain2 = ctx.createGain()
 
@@ -61,10 +79,13 @@ export function NotificationCenter() {
   const [panelAbierto, setPanelAbierto] = useState(false)
   const [alertaActiva, setAlertaActiva] = useState<NotificacionAsistencia | null>(null)
   const [permisoPush, setPermisoPush] = useState<NotificationPermission>("default")
+  const [estaSuscritoPush, setEstaSuscritoPush] = useState(false)
+  const [suscripcionEnProgreso, setSuscripcionEnProgreso] = useState(false)
+
   const idUltimaNotifConocida = useRef<string | null>(null)
   const esPrimeraCarga = useRef(true)
 
-  // 1. Consultar estado del permiso de notificaciones del dispositivo
+  // 1. Consultar estado del permiso y de la suscripción Web Push en el dispositivo
   useEffect(() => {
     try {
       if (typeof window !== "undefined" && "Notification" in window && window.Notification) {
@@ -73,12 +94,39 @@ export function NotificationCenter() {
     } catch {
       // Ignorar restricciones en WebKit
     }
+
+    async function verificarEstadoPush() {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window) {
+        try {
+          const reg = await navigator.serviceWorker.ready
+          const sub = await reg.pushManager.getSubscription()
+          if (sub) {
+            setEstaSuscritoPush(true)
+            // Sincronizar suscripción con el servidor
+            fetch("/api/push/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(sub),
+            }).catch(() => {})
+          }
+        } catch (e) {
+          console.log("Error verificando suscripción push existente:", e)
+        }
+      }
+    }
+
+    verificarEstadoPush()
   }, [])
 
-  // 2. Función para disparar notificación a nivel Sistema Operativo (Web Push / iOS PWA)
+  // 2. Función para disparar notificación en primer plano si la app está visible
   const dispararNotificacionSistema = useCallback((notif: NotificacionAsistencia) => {
     try {
-      if (typeof window !== "undefined" && "Notification" in window && window.Notification && window.Notification.permission === "granted") {
+      if (
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        window.Notification &&
+        window.Notification.permission === "granted"
+      ) {
         const titulo = `🔔 Checada: ${notif.tipoRegistro} (${notif.nomina})`
         const opciones: NotificationOptions = {
           body: `${notif.nombre} | Nómina: ${notif.nomina}\n${notif.tipoRegistro} a las ${notif.hora}`,
@@ -87,21 +135,16 @@ export function NotificationCenter() {
           tag: notif.id,
         }
 
-        // En iOS Safari PWA, las notificaciones deben enviarse vía Service Worker showNotification
         if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.ready.then((reg) => {
-            reg.showNotification(titulo, opciones)
-          }).catch(() => {})
-        } else {
-          try {
-            new Notification(titulo, opciones)
-          } catch {
-            // iOS standalone no permite constructor new Notification directo
-          }
+          navigator.serviceWorker.ready
+            .then((reg) => {
+              reg.showNotification(titulo, opciones)
+            })
+            .catch(() => {})
         }
       }
     } catch {
-      // Ignorar fallo de notificación del SO
+      // Ignorar fallo de notificación
     }
   }, [])
 
@@ -117,9 +160,12 @@ export function NotificationCenter() {
         if (lista.length > 0) {
           const masReciente = lista[0]
 
-          // Si detectamos un nuevo registro que no habíamos visto
-          if (!esPrimeraCarga.current && idUltimaNotifConocida.current && idUltimaNotifConocida.current !== masReciente.id) {
-            // Disparar sonido, toast y push
+          // Si detectamos un nuevo registro que no habíamos visto mientras la app está abierta
+          if (
+            !esPrimeraCarga.current &&
+            idUltimaNotifConocida.current &&
+            idUltimaNotifConocida.current !== masReciente.id
+          ) {
             reproducirChimeNotificacion()
             setAlertaActiva(masReciente)
             dispararNotificacionSistema(masReciente)
@@ -139,42 +185,77 @@ export function NotificationCenter() {
     }
   }, [dispararNotificacionSistema])
 
-  // Polling cada 4 segundos para actualización en tiempo real
+  // Polling cada 4 segundos mientras la app esté abierta
   useEffect(() => {
     cargarNotificaciones()
     const timer = setInterval(cargarNotificaciones, 4000)
     return () => clearInterval(timer)
   }, [cargarNotificaciones])
 
-  // Solicitar permiso de notificaciones para iPhone / iPad / PC
-  const solicitarPermisoPush = async () => {
-    if (typeof window !== "undefined" && "Notification" in window && window.Notification) {
-      try {
-        const permiso = await window.Notification.requestPermission()
+  // 4. Activar suscripción Web Push oficial (Llega incluso con la App CERRADA)
+  const activarPushEnSegundoPlano = async () => {
+    if (typeof window === "undefined") return
+
+    setSuscripcionEnProgreso(true)
+    try {
+      // Paso A: Solicitar permiso al usuario
+      let permiso = Notification.permission
+      if (permiso !== "granted") {
+        permiso = await Notification.requestPermission()
         setPermisoPush(permiso)
-        if (permiso === "granted") {
-          reproducirChimeNotificacion()
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.ready.then((reg) => {
-              reg.showNotification("🔔 Notificaciones ALTUS Activadas", {
-                body: "Recibirás alertas en tiempo real de cada entrada y salida de empleados.",
-                icon: "/logo-altus.jpg",
-              })
-            }).catch(() => {})
-          } else {
-            try {
-              new Notification("🔔 Notificaciones ALTUS Activadas", {
-                body: "Recibirás alertas en tiempo real de cada entrada y salida de empleados.",
-                icon: "/logo-altus.jpg",
-              })
-            } catch {
-              // iOS constructor fallback
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error al solicitar permiso de notificación:", err)
       }
+
+      if (permiso !== "granted") {
+        alert(
+          "Para recibir notificaciones con la app cerrada, por favor permite las notificaciones en la configuración de Safari / iPhone."
+        )
+        setSuscripcionEnProgreso(false)
+        return
+      }
+
+      // Paso B: Verificar Service Worker y PushManager
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert(
+          "Para activar notificaciones con la app cerrada en iPhone, asegúrate de haber agregado la aplicación a la pantalla de inicio desde Safari (iOS 16.4+)."
+        )
+        setSuscripcionEnProgreso(false)
+        return
+      }
+
+      const reg = await navigator.serviceWorker.ready
+
+      // Paso C: Crear la suscripción con la clave pública VAPID
+      let sub = await reg.pushManager.getSubscription()
+      if (!sub) {
+        const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        })
+      }
+
+      // Paso D: Enviar suscripción a nuestro backend
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub),
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        setEstaSuscritoPush(true)
+        reproducirChimeNotificacion()
+        alert(
+          "¡Notificaciones en Segundo Plano Activadas! Ahora recibirás las checadas incluso con la app cerrada o el iPhone bloqueado."
+        )
+      }
+    } catch (err) {
+      console.error("Error al suscribir a push:", err)
+      alert(
+        "Nota: En iPhone, Apple requiere que la aplicación esté agregada a la Pantalla de Inicio (PWA) para habilitar notificaciones push con la app cerrada."
+      )
+    } finally {
+      setSuscripcionEnProgreso(false)
     }
   }
 
@@ -226,6 +307,29 @@ export function NotificationCenter() {
     } catch (e) {
       console.error(e)
     }
+  }
+
+  // Enviar prueba con retardo de 4 segundos para que el usuario pueda cerrar la app y comprobar
+  const handleTestPushCerrada = async () => {
+    alert(
+      "En 4 segundos se emitirá la notificación. ¡Cierra la app o bloquea tu iPhone AHORA para verificar que llega!"
+    )
+    setTimeout(async () => {
+      try {
+        await fetch("/api/asistencia", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            empleadoId: "EMP-001",
+            nombre: "Carlos Mendoza",
+            tipoEvento: "ENTRADA",
+            tenantId: "tenant-demo",
+          }),
+        })
+      } catch (e) {
+        console.error(e)
+      }
+    }, 4000)
   }
 
   const noLeidas = notificaciones.filter((n) => !n.leido).length
@@ -280,18 +384,47 @@ export function NotificationCenter() {
               </button>
             </div>
 
-            {/* Aviso de permiso Push en iPhone / iPad / PC */}
-            {permisoPush !== "granted" && (
-              <div className="bg-amber-50 border-b border-amber-200 p-3 text-xs flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-amber-900">
-                  <Smartphone className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>¿Recibir avisos en tu pantalla / iPhone?</span>
+            {/* Estado de Notificaciones con la APP CERRADA */}
+            {estaSuscritoPush ? (
+              <div className="bg-emerald-50 border-b border-emerald-200 p-3 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-emerald-900">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <div>
+                    <strong className="text-emerald-950 font-bold block">
+                      Push Activo (App Abierta o Cerrada)
+                    </strong>
+                    <span className="text-[11px] text-emerald-700">
+                      Recibirás avisos en pantalla bloqueada / iPhone.
+                    </span>
+                  </div>
                 </div>
                 <button
-                  onClick={solicitarPermisoPush}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] shrink-0 transition-colors shadow-sm"
+                  onClick={handleTestPushCerrada}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded-lg text-[10px] shrink-0 transition-colors shadow-sm"
+                  title="Probar notificación en segundo plano"
                 >
-                  Activar
+                  Probar
+                </button>
+              </div>
+            ) : (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 p-3 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-amber-900">
+                  <Smartphone className="w-4 h-4 text-[#D95A3F] shrink-0" />
+                  <div>
+                    <strong className="text-slate-900 font-bold block">
+                      ¿Recibir con la APP CERRADA?
+                    </strong>
+                    <span className="text-[11px] text-slate-600">
+                      Activa el Push de Apple / APNs para tu pantalla.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={activarPushEnSegundoPlano}
+                  disabled={suscripcionEnProgreso}
+                  className="bg-[#D95A3F] hover:bg-[#b8442c] text-white font-bold px-3 py-1.5 rounded-xl text-xs shrink-0 transition-colors shadow-md disabled:opacity-50"
+                >
+                  {suscripcionEnProgreso ? "Conectando..." : "Activar"}
                 </button>
               </div>
             )}

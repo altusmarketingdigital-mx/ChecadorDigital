@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { agregarNotificacion } from '@/lib/notifications'
+import { enviarPushATodos } from '@/lib/pushSender'
 
 const catalogoNombres: Record<string, string> = {
   "EMP-001": "Carlos Mendoza",
@@ -46,6 +47,19 @@ export async function POST(request: Request) {
       tipoRegistro: tipoEvento,
       hora: horaFormateada,
       fecha: fechaFormateada
+    })
+
+    // 3. Despacho Web Push a través de Apple APNs y Google FCM (Llega con App CERRADA)
+    enviarPushATodos({
+      title: `🔔 Checada: ${tipoEvento} - ${nominaNormalizada}`,
+      body: `${nombreFinal} | Nómina: ${nominaNormalizada}\n${tipoEvento} a las ${horaFormateada}`,
+      nomina: nominaNormalizada,
+      nombre: nombreFinal,
+      tipoRegistro: tipoEvento,
+      hora: horaFormateada,
+      url: "/dashboard"
+    }).catch((pushErr) => {
+      console.log("Error silencioso en Web Push:", pushErr)
     })
 
     return NextResponse.json({ 

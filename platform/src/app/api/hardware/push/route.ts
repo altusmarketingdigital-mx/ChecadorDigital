@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { agregarNotificacion } from '@/lib/notifications'
+import { enviarPushATodos } from '@/lib/pushSender'
 
 const nombresHardware: Record<string, string> = {
   "1": "Carlos Mendoza",
@@ -45,13 +46,27 @@ export async function POST(request: Request) {
 
       // Generar notificación para el administrador
       const nombreEmp = nombresHardware[empIdTrim] || `Colaborador #${empIdTrim}`
+      const horaStr = fechaLector.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      const nominaStr = `EMP-${empIdTrim.padStart(3, '0')}`
+
       agregarNotificacion({
-        nomina: `EMP-${empIdTrim.padStart(3, '0')}`,
+        nomina: nominaStr,
         nombre: nombreEmp,
         tipoRegistro: tipoEvento,
-        hora: fechaLector.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
+        hora: horaStr,
         fecha: fechaLector.toLocaleDateString('es-MX')
       })
+
+      // Notificación push con la app cerrada
+      enviarPushATodos({
+        title: `🔔 Checada Biimétrica: ${tipoEvento} - ${nominaStr}`,
+        body: `${nombreEmp} | Nómina: ${nominaStr}\n${tipoEvento} a las ${horaStr}`,
+        nomina: nominaStr,
+        nombre: nombreEmp,
+        tipoRegistro: tipoEvento,
+        hora: horaStr,
+        url: "/dashboard"
+      }).catch(() => {})
 
       // Armar el evento estandarizado para nuestra Base de Datos
       eventosPendientes.push({

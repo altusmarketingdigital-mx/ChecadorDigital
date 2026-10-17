@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/login') || 
     pathname.startsWith('/api/auth') || 
+    pathname.startsWith('/api/push') || 
     pathname.startsWith('/setup-admin') ||
     pathname === '/logo-altus.jpg' ||
     pathname === '/favicon.ico' ||
