@@ -2,8 +2,17 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { 
   Bell, BellRing, LogIn, LogOut, Check, Trash2, X, 
-  Smartphone, Volume2, Sparkles, Clock, User, ShieldCheck 
+  Smartphone, Volume2, Sparkles, Clock, User, ShieldCheck,
+  MapPin, Camera, ExternalLink, Maximize2, Eye
 } from "lucide-react"
+
+export interface UbicacionRegistro {
+  lat: number
+  lng: number
+  precision?: number
+  mapaUrl: string
+  direccionAprox?: string
+}
 
 export interface NotificacionAsistencia {
   id: string
@@ -14,6 +23,8 @@ export interface NotificacionAsistencia {
   fecha: string
   timestamp: number
   leido: boolean
+  foto?: string
+  ubicacion?: UbicacionRegistro
 }
 
 const VAPID_PUBLIC_KEY =
@@ -78,6 +89,7 @@ export function NotificationCenter() {
   const [notificaciones, setNotificaciones] = useState<NotificacionAsistencia[]>([])
   const [panelAbierto, setPanelAbierto] = useState(false)
   const [alertaActiva, setAlertaActiva] = useState<NotificacionAsistencia | null>(null)
+  const [fotoModal, setFotoModal] = useState<NotificacionAsistencia | null>(null)
   const [permisoPush, setPermisoPush] = useState<NotificationPermission>("default")
   const [estaSuscritoPush, setEstaSuscritoPush] = useState(false)
   const [suscripcionEnProgreso, setSuscripcionEnProgreso] = useState(false)
@@ -287,7 +299,7 @@ export function NotificationCenter() {
     }
   }
 
-  // Simular una checada de prueba
+  // Simular una checada de prueba con foto facial y ubicación satelital
   const handleSimularChecada = async (tipo: "ENTRADA" | "SALIDA") => {
     try {
       const res = await fetch("/api/asistencia", {
@@ -298,6 +310,16 @@ export function NotificationCenter() {
           nombre: "Carlos Mendoza",
           tipoEvento: tipo,
           tenantId: "tenant-demo",
+          foto: tipo === "ENTRADA" 
+            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
+            : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+          ubicacion: {
+            lat: 19.4326,
+            lng: -99.1332,
+            precision: 8,
+            mapaUrl: "https://www.google.com/maps?q=19.4326,-99.1332",
+            direccionAprox: "Paseo de la Reforma / CDMX"
+          }
         }),
       })
       const data = await res.json()
@@ -312,7 +334,7 @@ export function NotificationCenter() {
   // Enviar prueba con retardo de 4 segundos para que el usuario pueda cerrar la app y comprobar
   const handleTestPushCerrada = async () => {
     alert(
-      "En 4 segundos se emitirá la notificación. ¡Cierra la app o bloquea tu iPhone AHORA para verificar que llega!"
+      "En 4 segundos se emitirá la notificación con Fotografía y Ubicación GPS. ¡Cierra la app o bloquea tu iPhone AHORA para verificar que llega!"
     )
     setTimeout(async () => {
       try {
@@ -324,6 +346,14 @@ export function NotificationCenter() {
             nombre: "Carlos Mendoza",
             tipoEvento: "ENTRADA",
             tenantId: "tenant-demo",
+            foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+            ubicacion: {
+              lat: 19.4326,
+              lng: -99.1332,
+              precision: 8,
+              mapaUrl: "https://www.google.com/maps?q=19.4326,-99.1332",
+              direccionAprox: "CDMX Reforma"
+            }
           }),
         })
       } catch (e) {
@@ -453,7 +483,7 @@ export function NotificationCenter() {
             </div>
 
             {/* Lista de Notificaciones */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+            <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
               {notificaciones.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 space-y-2">
                   <Bell className="w-8 h-8 mx-auto opacity-30 text-slate-400" />
@@ -469,22 +499,44 @@ export function NotificationCenter() {
                         !notif.leido ? "bg-amber-50/50" : ""
                       }`}
                     >
-                      {/* Ícono de Entrada / Salida */}
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                          esEntrada
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-rose-100 text-rose-700"
-                        }`}
-                      >
-                        {esEntrada ? (
-                          <LogIn className="w-4 h-4" />
-                        ) : (
-                          <LogOut className="w-4 h-4" />
-                        )}
-                      </div>
+                      {/* Fotografía o Ícono de Entrada/Salida */}
+                      {notif.foto ? (
+                        <div 
+                          onClick={() => setFotoModal(notif)}
+                          className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md cursor-pointer group hover:ring-2 hover:ring-[#D95A3F] transition-all"
+                          title="Click para ver fotografía completa"
+                        >
+                          <img 
+                            src={notif.foto} 
+                            alt={notif.nombre} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                            <Eye className="w-4 h-4 drop-shadow" />
+                          </div>
+                          <span className={`absolute bottom-0 inset-x-0 text-[8px] font-black text-center text-white ${
+                            esEntrada ? "bg-emerald-600/90" : "bg-rose-600/90"
+                          }`}>
+                            FOTO
+                          </span>
+                        </div>
+                      ) : (
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                            esEntrada
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-rose-100 text-rose-700"
+                          }`}
+                        >
+                          {esEntrada ? (
+                            <LogIn className="w-4 h-4" />
+                          ) : (
+                            <LogOut className="w-4 h-4" />
+                          )}
+                        </div>
+                      )}
 
-                      {/* Detalles del Registro: Nómina, Nombre, Tipo y Hora */}
+                      {/* Detalles del Registro: Nómina, Nombre, Tipo, Hora y Ubicación */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1">
                           <span
@@ -496,7 +548,7 @@ export function NotificationCenter() {
                           >
                             {notif.tipoRegistro}
                           </span>
-                          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                          <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
                             <Clock className="w-3 h-3 text-slate-400" />
                             {notif.hora}
                           </span>
@@ -506,7 +558,7 @@ export function NotificationCenter() {
                           <p className="text-xs font-bold text-slate-900 truncate">
                             {notif.nombre}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
                             <span className="font-semibold text-slate-700">
                               Nómina: <strong className="font-mono text-[#D95A3F]">{notif.nomina}</strong>
                             </span>
@@ -514,6 +566,26 @@ export function NotificationCenter() {
                             <span>{notif.fecha}</span>
                           </div>
                         </div>
+
+                        {/* Fila de Ubicación GPS con Enlace a Google Maps */}
+                        {notif.ubicacion && (
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            <a
+                              href={notif.ubicacion.mapaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 text-[10px] font-bold shadow-xs transition-colors"
+                              title="Ver ubicación exacta en Google Maps"
+                            >
+                              <MapPin className="w-3 h-3 text-sky-600 shrink-0" />
+                              <span>Ver en Google Maps</span>
+                              <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                            </a>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              (±{notif.ubicacion.precision || 10}m)
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
@@ -523,7 +595,7 @@ export function NotificationCenter() {
 
             {/* Pie de Panel con Botón para Simular Prueba */}
             <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-slate-400">Prueba instantánea:</span>
+              <span className="text-[11px] text-slate-400">Prueba con Foto y GPS:</span>
               <div className="flex gap-1.5">
                 <button
                   onClick={() => handleSimularChecada("ENTRADA")}
@@ -543,30 +615,47 @@ export function NotificationCenter() {
         )}
       </div>
 
-      {/* 3. ALERTA FLOTANTE EN TIEMPO REAL (TOAST EN PANTALLA CON SONIDO) */}
+      {/* 3. ALERTA FLOTANTE EN TIEMPO REAL (TOAST EN PANTALLA CON FOTO Y MAPA) */}
       {alertaActiva && (
         <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 max-w-sm w-full animate-in slide-in-from-top-4 duration-300 pointer-events-auto">
           <div className="bg-[#142238] border-2 border-[#D95A3F] text-white rounded-2xl shadow-2xl p-4 flex items-start gap-3.5 backdrop-blur-md">
-            {/* Ícono animado */}
-            <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
-                alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA")
-                  ? "bg-emerald-500 text-white"
-                  : "bg-[#D95A3F] text-white"
-              }`}
-            >
-              {alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA") ? (
-                <LogIn className="w-6 h-6 animate-pulse" />
-              ) : (
-                <LogOut className="w-6 h-6 animate-pulse" />
-              )}
-            </div>
+            {/* Foto o Ícono animado */}
+            {alertaActiva.foto ? (
+              <div 
+                onClick={() => setFotoModal(alertaActiva)}
+                className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 border-2 border-white/30 shadow-md cursor-pointer hover:border-[#D95A3F] transition-all"
+                title="Click para ampliar fotografía"
+              >
+                <img 
+                  src={alertaActiva.foto} 
+                  alt={alertaActiva.nombre} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-center text-white">
+                  FOTO
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
+                  alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA")
+                    ? "bg-emerald-500 text-white"
+                    : "bg-[#D95A3F] text-white"
+                }`}
+              >
+                {alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA") ? (
+                  <LogIn className="w-6 h-6 animate-pulse" />
+                ) : (
+                  <LogOut className="w-6 h-6 animate-pulse" />
+                )}
+              </div>
+            )}
 
-            {/* Información requerida: Nómina, Nombre, Tipo de Registro y Hora */}
+            {/* Información: Nómina, Nombre, Tipo, Hora y Ubicación */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] bg-white/20 text-white font-black uppercase px-2 py-0.5 rounded tracking-wider">
-                  ¡Nuevo Registro de {alertaActiva.tipoRegistro}!
+                  ¡Registro de {alertaActiva.tipoRegistro}!
                 </span>
                 <button
                   onClick={() => setAlertaActiva(null)}
@@ -589,6 +678,113 @@ export function NotificationCenter() {
                   <span>Hora: <strong className="text-white font-mono">{alertaActiva.hora}</strong></span>
                 </div>
               </div>
+
+              {/* Botón de Google Maps en la Alerta Flotante */}
+              {alertaActiva.ubicacion && (
+                <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
+                  <a
+                    href={alertaActiva.ubicacion.mapaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#D95A3F] hover:bg-[#b8442c] text-white text-[10px] font-bold shadow-md transition-colors"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    <span>Ver en Google Maps</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                  {alertaActiva.foto && (
+                    <button
+                      onClick={() => setFotoModal(alertaActiva)}
+                      className="text-[10px] text-slate-300 hover:text-white underline font-semibold"
+                    >
+                      Ampliar foto
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL PARA VISUALIZAR FOTOGRAFÍA FACIAL COMPLETA */}
+      {fotoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-[#142238] border border-white/20 rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl text-white">
+            {/* Header del Modal */}
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Camera className="w-4 h-4 text-[#D95A3F]" />
+                <h3 className="font-bold text-sm">Fotografía de Verificación</h3>
+              </div>
+              <button
+                onClick={() => setFotoModal(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Imagen Principal */}
+            <div className="p-4 flex flex-col items-center">
+              <div className="w-full aspect-4/3 rounded-2xl overflow-hidden border-2 border-[#D95A3F]/50 shadow-inner bg-black flex items-center justify-center">
+                <img
+                  src={fotoModal.foto}
+                  alt={fotoModal.nombre}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Datos del colaborador y registro */}
+              <div className="w-full mt-4 space-y-2 text-xs">
+                <div className="flex justify-between items-center py-1 border-b border-white/10">
+                  <span className="text-slate-400">Colaborador:</span>
+                  <span className="font-bold text-white text-sm">{fotoModal.nombre}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-white/10">
+                  <span className="text-slate-400">Nómina:</span>
+                  <span className="font-mono font-bold text-[#D95A3F]">{fotoModal.nomina}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-white/10">
+                  <span className="text-slate-400">Tipo de Evento:</span>
+                  <span className={`px-2 py-0.5 rounded font-black text-[10px] ${
+                    fotoModal.tipoRegistro.toUpperCase().includes("ENTRADA")
+                      ? "bg-emerald-600 text-white"
+                      : "bg-rose-600 text-white"
+                  }`}>
+                    {fotoModal.tipoRegistro}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-white/10">
+                  <span className="text-slate-400">Hora Oficial:</span>
+                  <span className="font-mono text-white">{fotoModal.hora} ({fotoModal.fecha})</span>
+                </div>
+
+                {fotoModal.ubicacion && (
+                  <div className="pt-2">
+                    <a
+                      href={fotoModal.ubicacion.mapaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#D95A3F] hover:bg-[#b8442c] text-white font-bold rounded-xl transition-colors shadow-md"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>Abrir Ubicación en Google Maps</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="p-3 bg-[#0e192a] border-t border-white/10 text-center">
+              <button
+                onClick={() => setFotoModal(null)}
+                className="text-xs text-slate-400 hover:text-white"
+              >
+                Cerrar vista previa
+              </button>
             </div>
           </div>
         </div>

@@ -17,7 +17,7 @@ const catalogoNombres: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const data = await request.json()
-    const { empleadoId, tipoEvento, tenantId, nombre } = data
+    const { empleadoId, tipoEvento, tenantId, nombre, foto, ubicacion } = data
     
     // 1. Obtener la hora oficial del servidor (Seguridad: No confiar en la hora del navegador)
     const fechaHoraEvento = new Date()
@@ -31,8 +31,21 @@ export async function POST(request: Request) {
     const nominaNormalizada = (empleadoId || "EMP-001").trim()
     const nombreFinal = nombre || catalogoNombres[nominaNormalizada] || catalogoNombres[nominaNormalizada.replace(/^EMP-0*/, '')] || `Empleado ${nominaNormalizada}`
 
-    // 2. Notificación en tiempo real para el Administrador del Sistema
-    // Indica nómina, nombre, tipo de registro y hora
+    // 2. Formatear datos de geolocalización satelital (si se proporcionaron)
+    let ubicacionNormalizada = undefined
+    if (ubicacion && typeof ubicacion.lat === "number" && typeof ubicacion.lng === "number") {
+      const mapaUrl = ubicacion.mapaUrl || `https://www.google.com/maps?q=${ubicacion.lat},${ubicacion.lng}`
+      ubicacionNormalizada = {
+        lat: ubicacion.lat,
+        lng: ubicacion.lng,
+        precision: ubicacion.precision || 10,
+        mapaUrl,
+        direccionAprox: ubicacion.direccionAprox || `Lat: ${ubicacion.lat.toFixed(5)}, Lng: ${ubicacion.lng.toFixed(5)}`
+      }
+    }
+
+    // 3. Notificación en tiempo real para el Administrador del Sistema
+    // Incluye nómina, nombre, tipo de registro, hora, fotografía capturada y enlace satelital de GPS
     const horaFormateada = fechaHoraEvento.toLocaleTimeString('es-MX', {
       hour: '2-digit',
       minute: '2-digit',
@@ -46,17 +59,31 @@ export async function POST(request: Request) {
       nombre: nombreFinal,
       tipoRegistro: tipoEvento,
       hora: horaFormateada,
-      fecha: fechaFormateada
+      fecha: fechaFormateada,
+      foto: typeof foto === "string" && foto.length > 10 ? foto : undefined,
+      ubicacion: ubicacionNormalizada
     })
 
-    // 3. Despacho Web Push a través de Apple APNs y Google FCM (Llega con App CERRADA)
+    // 4. Despacho Web Push a través de Apple APNs y Google FCM (Llega con App CERRADA)
+    let pushBody = `${nombreFinal} | Nómina: ${nominaNormalizada}\n${tipoEvento} a las ${horaFormateada}`
+    if (ubicacionNormalizada) {
+      pushBody += `\n📍 Ubicación: Lat ${ubicacionNormalizada.lat.toFixed(4)}, Lng ${ubicacionNormalizada.lng.toFixed(4)}`
+    }
+    if (foto) {
+      pushBody += `\n📸 Fotografía facial adjunta`
+    }
+
     enviarPushATodos({
       title: `🔔 Checada: ${tipoEvento} - ${nominaNormalizada}`,
-      body: `${nombreFinal} | Nómina: ${nominaNormalizada}\n${tipoEvento} a las ${horaFormateada}`,
+      body: pushBody,
       nomina: nominaNormalizada,
       nombre: nombreFinal,
       tipoRegistro: tipoEvento,
       hora: horaFormateada,
+      foto: typeof foto === "string" && foto.startsWith("http") ? foto : undefined,
+      mapaUrl: ubicacionNormalizada?.mapaUrl || "/dashboard",
+      lat: ubicacionNormalizada?.lat,
+      lng: ubicacionNormalizada?.lng,
       url: "/dashboard"
     }).catch((pushErr) => {
       console.log("Error silencioso en Web Push:", pushErr)
@@ -64,7 +91,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      mensaje: `Registro de ${tipoEvento} guardado exitosamente.`,
+      mensaje: `Registro de ${tipoEvento} guardado exitosamente con fotografía y geolocalización.`,
       horaOficial: fechaHoraEvento,
       toleranciaAplicada: toleranciaMinutos,
       notificacion: notificacionCreada

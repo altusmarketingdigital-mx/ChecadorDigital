@@ -1,4 +1,12 @@
 // Almacén en memoria global para Notificaciones de Asistencia en Tiempo Real
+export interface UbicacionRegistro {
+  lat: number
+  lng: number
+  precision?: number
+  mapaUrl: string
+  direccionAprox?: string
+}
+
 export interface NotificacionAsistencia {
   id: string
   nomina: string
@@ -8,9 +16,11 @@ export interface NotificacionAsistencia {
   fecha: string
   timestamp: number
   leido: boolean
+  foto?: string // Fotografía capturada al momento del registro (Base64 JPEG)
+  ubicacion?: UbicacionRegistro // Geolocalización satelital (GPS + Google Maps)
 }
 
-// Inicializamos con checadas recientes de ejemplo
+// Inicializamos con checadas recientes de ejemplo con fotos y ubicación de muestra
 const notificacionesIniciales: NotificacionAsistencia[] = [
   {
     id: "notif-init-1",
@@ -21,6 +31,14 @@ const notificacionesIniciales: NotificacionAsistencia[] = [
     fecha: new Date().toLocaleDateString("es-MX"),
     timestamp: Date.now() - 1000 * 60 * 15, // Hace 15 minutos
     leido: false,
+    foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+    ubicacion: {
+      lat: 19.4326,
+      lng: -99.1332,
+      precision: 12,
+      mapaUrl: "https://www.google.com/maps?q=19.4326,-99.1332",
+      direccionAprox: "Paseo de la Reforma / CDMX"
+    }
   },
   {
     id: "notif-init-2",
@@ -31,6 +49,14 @@ const notificacionesIniciales: NotificacionAsistencia[] = [
     fecha: new Date().toLocaleDateString("es-MX"),
     timestamp: Date.now() - 1000 * 60 * 5, // Hace 5 minutos
     leido: false,
+    foto: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
+    ubicacion: {
+      lat: 19.4270,
+      lng: -99.1677,
+      precision: 8,
+      mapaUrl: "https://www.google.com/maps?q=19.4270,-99.1677",
+      direccionAprox: "Zona Corporativa Insurgentes Sur"
+    }
   },
 ]
 
@@ -53,6 +79,8 @@ export function agregarNotificacion(datos: {
   tipoRegistro: string
   hora?: string
   fecha?: string
+  foto?: string
+  ubicacion?: UbicacionRegistro
 }): NotificacionAsistencia {
   const now = new Date()
   const horaFormateada =
@@ -74,6 +102,8 @@ export function agregarNotificacion(datos: {
     fecha: fechaFormateada,
     timestamp: now.getTime(),
     leido: false,
+    foto: datos.foto,
+    ubicacion: datos.ubicacion,
   }
 
   if (!globalStore.__altus_notificaciones__) {

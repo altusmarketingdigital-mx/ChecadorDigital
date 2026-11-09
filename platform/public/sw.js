@@ -46,9 +46,10 @@ self.addEventListener('push', (event) => {
     body: data.body,
     icon: '/logo-altus.jpg',
     badge: '/logo-altus.jpg',
+    image: data.image || undefined,
     vibrate: [200, 100, 200],
     data: {
-      url: data.url || '/dashboard'
+      url: data.mapaUrl || data.url || '/dashboard'
     }
   };
 

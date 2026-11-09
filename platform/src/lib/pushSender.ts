@@ -27,6 +27,10 @@ export interface PushPayload {
   tipoRegistro?: string
   hora?: string
   url?: string
+  foto?: string
+  mapaUrl?: string
+  lat?: number
+  lng?: number
 }
 
 // Almacén en memoria global para suscripciones de administradores
@@ -72,6 +76,9 @@ export async function enviarPushATodos(
     return { exitosos: 0, fallidos: 0, total: 0 }
   }
 
+  // Aseguramos que la imagen solo viaje si es una URL corta (no base64 de 50KB para no superar el límite de 4KB de WebPush)
+  const imagenUrl = payload.foto && payload.foto.startsWith("http") ? payload.foto : undefined
+
   const payloadString = JSON.stringify({
     title: payload.title || "ALTUS Checador",
     body: payload.body,
@@ -79,7 +86,9 @@ export async function enviarPushATodos(
     nombre: payload.nombre,
     tipoRegistro: payload.tipoRegistro,
     hora: payload.hora,
-    url: payload.url || "/dashboard",
+    url: payload.mapaUrl || payload.url || "/dashboard",
+    mapaUrl: payload.mapaUrl,
+    image: imagenUrl,
   })
 
   let exitosos = 0

@@ -27,7 +27,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { nomina, nombre, tipoRegistro, hora, fecha } = body
+    const { nomina, nombre, tipoRegistro, hora, fecha, foto, ubicacion } = body
 
     if (!tipoRegistro) {
       return NextResponse.json(
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       tipoRegistro,
       hora,
       fecha,
+      foto,
+      ubicacion,
     })
 
     return NextResponse.json({
