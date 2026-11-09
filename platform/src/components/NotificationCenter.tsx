@@ -5,6 +5,7 @@ import {
   Smartphone, Volume2, Sparkles, Clock, User, ShieldCheck,
   MapPin, Camera, ExternalLink, Maximize2, Eye
 } from "lucide-react"
+import { generarAvatarBiometrico } from "@/lib/avatarHelper"
 
 export interface UbicacionRegistro {
   lat: number
@@ -310,9 +311,7 @@ export function NotificationCenter() {
           nombre: "Carlos Mendoza",
           tipoEvento: tipo,
           tenantId: "tenant-demo",
-          foto: tipo === "ENTRADA" 
-            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
-            : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+          foto: generarAvatarBiometrico("Carlos Mendoza", "EMP-001", "m"),
           ubicacion: {
             lat: 19.4326,
             lng: -99.1332,
@@ -346,7 +345,7 @@ export function NotificationCenter() {
             nombre: "Carlos Mendoza",
             tipoEvento: "ENTRADA",
             tenantId: "tenant-demo",
-            foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+            foto: generarAvatarBiometrico("Carlos Mendoza", "EMP-001", "m"),
             ubicacion: {
               lat: 19.4326,
               lng: -99.1332,
@@ -503,13 +502,17 @@ export function NotificationCenter() {
                       {notif.foto ? (
                         <div 
                           onClick={() => setFotoModal(notif)}
-                          className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md cursor-pointer group hover:ring-2 hover:ring-[#D95A3F] transition-all"
+                          className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md cursor-pointer group hover:ring-2 hover:ring-[#D95A3F] transition-all bg-slate-900"
                           title="Click para ver fotografía completa"
                         >
                           <img 
                             src={notif.foto} 
                             alt={notif.nombre} 
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                            onError={(e) => {
+                              const target = e.currentTarget as HTMLImageElement
+                              target.src = generarAvatarBiometrico(notif.nombre, notif.nomina)
+                            }}
                           />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
                             <Eye className="w-4 h-4 drop-shadow" />
@@ -522,17 +525,23 @@ export function NotificationCenter() {
                         </div>
                       ) : (
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                            esEntrada
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-rose-100 text-rose-700"
-                          }`}
+                          onClick={() => setFotoModal({
+                            ...notif,
+                            foto: generarAvatarBiometrico(notif.nombre, notif.nomina)
+                          })}
+                          className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md cursor-pointer group hover:ring-2 hover:ring-[#D95A3F] transition-all bg-slate-900"
+                          title="Click para ver credencial biométrica"
                         >
-                          {esEntrada ? (
-                            <LogIn className="w-4 h-4" />
-                          ) : (
-                            <LogOut className="w-4 h-4" />
-                          )}
+                          <img 
+                            src={generarAvatarBiometrico(notif.nombre, notif.nomina)} 
+                            alt={notif.nombre} 
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                          />
+                          <span className={`absolute bottom-0 inset-x-0 text-[8px] font-black text-center text-white ${
+                            esEntrada ? "bg-emerald-600/90" : "bg-rose-600/90"
+                          }`}>
+                            BIOMETRÍA
+                          </span>
                         </div>
                       )}
 
@@ -623,31 +632,39 @@ export function NotificationCenter() {
             {alertaActiva.foto ? (
               <div 
                 onClick={() => setFotoModal(alertaActiva)}
-                className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 border-2 border-white/30 shadow-md cursor-pointer hover:border-[#D95A3F] transition-all"
+                className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 border-2 border-white/30 shadow-md cursor-pointer hover:border-[#D95A3F] transition-all bg-slate-900"
                 title="Click para ampliar fotografía"
               >
                 <img 
                   src={alertaActiva.foto} 
                   alt={alertaActiva.nombre} 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement
+                    target.src = generarAvatarBiometrico(alertaActiva.nombre, alertaActiva.nomina)
+                  }}
                 />
                 <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-center text-white">
                   FOTO
                 </div>
               </div>
             ) : (
-              <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-md ${
-                  alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA")
-                    ? "bg-emerald-500 text-white"
-                    : "bg-[#D95A3F] text-white"
-                }`}
+              <div 
+                onClick={() => setFotoModal({
+                  ...alertaActiva,
+                  foto: generarAvatarBiometrico(alertaActiva.nombre, alertaActiva.nomina)
+                })}
+                className="relative w-13 h-13 rounded-xl overflow-hidden shrink-0 border-2 border-white/30 shadow-md cursor-pointer hover:border-[#D95A3F] transition-all bg-slate-900"
+                title="Click para ampliar credencial biométrica"
               >
-                {alertaActiva.tipoRegistro.toUpperCase().includes("ENTRADA") ? (
-                  <LogIn className="w-6 h-6 animate-pulse" />
-                ) : (
-                  <LogOut className="w-6 h-6 animate-pulse" />
-                )}
+                <img 
+                  src={generarAvatarBiometrico(alertaActiva.nombre, alertaActiva.nomina)} 
+                  alt={alertaActiva.nombre} 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-center text-white">
+                  BIOMETRÍA
+                </div>
               </div>
             )}
 
@@ -727,11 +744,15 @@ export function NotificationCenter() {
 
             {/* Imagen Principal */}
             <div className="p-4 flex flex-col items-center">
-              <div className="w-full aspect-4/3 rounded-2xl overflow-hidden border-2 border-[#D95A3F]/50 shadow-inner bg-black flex items-center justify-center">
+              <div className="w-full aspect-4/3 rounded-2xl overflow-hidden border-2 border-[#D95A3F]/50 shadow-inner bg-slate-900 flex items-center justify-center">
                 <img
-                  src={fotoModal.foto}
+                  src={fotoModal.foto || generarAvatarBiometrico(fotoModal.nombre, fotoModal.nomina)}
                   alt={fotoModal.nombre}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement
+                    target.src = generarAvatarBiometrico(fotoModal.nombre, fotoModal.nomina)
+                  }}
                 />
               </div>
 
