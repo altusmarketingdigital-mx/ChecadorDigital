@@ -7,7 +7,10 @@ export function middleware(request: NextRequest) {
   // 1. Rutas públicas y recursos estáticos que NUNCA deben redirigirse
   if (
     pathname.startsWith('/login') || 
+    pathname.startsWith('/checador') ||
     pathname.startsWith('/api/auth') || 
+    pathname.startsWith('/api/colaborador') ||
+    pathname.startsWith('/api/asistencia') ||
     pathname.startsWith('/api/push') || 
     pathname.startsWith('/setup-admin') ||
     pathname === '/logo-altus.jpg' ||

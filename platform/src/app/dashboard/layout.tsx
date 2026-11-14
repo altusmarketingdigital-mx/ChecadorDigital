@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
   Home, Users, Clock, Settings2, ShieldAlert, Cpu, 
-  FileSpreadsheet, Scale, FileCheck, LogOut, Menu, X, FileUp 
+  FileSpreadsheet, Scale, FileCheck, LogOut, Menu, X, FileUp, Fingerprint 
 } from "lucide-react"
 import { AltusLogo } from "@/components/AltusLogo"
 import { NotificationCenter } from "@/components/NotificationCenter"
@@ -22,6 +22,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const menuItems = [
     { name: "Panel Principal", href: "/dashboard", icon: Home },
+    { name: "Portal Trabajador", href: "/dashboard/checador-colaborador", icon: Fingerprint },
     { name: "Empleados", href: "/dashboard/empleados", icon: Users },
     { name: "Kiosco Asistencia", href: "/dashboard/asistencia", icon: Clock },
     { name: "Jornadas y Horarios", href: "/dashboard/jornadas", icon: Settings2 },
